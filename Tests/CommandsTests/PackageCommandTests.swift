@@ -794,7 +794,7 @@ final class PackageCommandTests: CommandsTestCase {
         }
     }
 
-    func testPackageAddDependency() async throws {
+    func testPackageAddURLDependency() async throws {
         try await testWithTemporaryDirectory { tmpPath in
             let fs = localFileSystem
             let path = tmpPath.appending("PackageB")
@@ -811,7 +811,16 @@ final class PackageCommandTests: CommandsTestCase {
                 """
             )
 
-            _ = try await execute(["add-dependency", "--branch", "main", "https://github.com/swiftlang/swift-syntax.git"], packagePath: path)
+            _ = try await execute(
+                [
+                    "add-dependency",
+                    "--url",
+                    "https://github.com/swiftlang/swift-syntax.git",
+                    "--branch",
+                    "main",
+                ],
+                packagePath: path
+            )
 
             let manifest = path.appending("Package.swift")
             XCTAssertFileExists(manifest)
@@ -820,6 +829,41 @@ final class PackageCommandTests: CommandsTestCase {
             XCTAssertMatch(contents, .contains(#".package(url: "https://github.com/swiftlang/swift-syntax.git", branch: "main"),"#))
         }
     }
+
+    func testPackageAddPathDependency() async throws {
+        try await testWithTemporaryDirectory { tmpPath in
+            let fs = localFileSystem
+            let path = tmpPath.appending("PackageB")
+            try fs.createDirectory(path)
+
+            try fs.writeFileContents(path.appending("Package.swift"), string:
+                """
+                // swift-tools-version: 5.9
+                import PackageDescription
+                let package = Package(
+                    name: "client",
+                    targets: [ .target(name: "client", dependencies: [ "library" ]) ]
+                )
+                """
+            )
+
+            _ = try await execute(
+                [
+                    "add-dependency",
+                    "--path",
+                    "/directory"
+                ],
+                packagePath: path
+            )
+
+            let manifest = path.appending("Package.swift")
+            XCTAssertFileExists(manifest)
+            let contents: String = try fs.readFileContents(manifest)
+
+            XCTAssertMatch(contents, .contains(#".package(path: "/directory"),"#))
+        }
+    }
+
 
     func testPackageAddTarget() async throws {
         try await testWithTemporaryDirectory { tmpPath in
