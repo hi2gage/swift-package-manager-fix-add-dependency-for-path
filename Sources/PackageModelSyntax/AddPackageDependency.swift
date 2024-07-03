@@ -34,7 +34,7 @@ public struct AddPackageDependency {
     /// Produce the set of source edits needed to add the given package
     /// dependency to the given manifest file.
     public static func addPackageDependency(
-        _ dependency: PackageDependency,
+        _ dependency: MappablePackageDependency,
         to manifest: SourceFileSyntax
     ) throws -> PackageEditResult {
         // Make sure we have a suitable tools version in the manifest.
@@ -57,7 +57,7 @@ public struct AddPackageDependency {
 
     /// Implementation of adding a package dependency to an existing call.
     static func addPackageDependencyLocal(
-        _ dependency: PackageDependency,
+        _ dependency: MappablePackageDependency,
         to packageCall: FunctionCallExprSyntax
     ) throws -> FunctionCallExprSyntax {
         try packageCall.appendingToArrayArgument(

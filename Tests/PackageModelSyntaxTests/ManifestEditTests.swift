@@ -68,13 +68,16 @@ func assertManifestRefactor(
 
 class ManifestEditTests: XCTestCase {
     static let swiftSystemURL: SourceControlURL = "https://github.com/apple/swift-system.git"
-    static let swiftSystemPackageDependency = PackageDependency.remoteSourceControl(
-            identity: PackageIdentity(url: swiftSystemURL),
-            nameForTargetDependencyResolutionOnly: nil,
-            url: swiftSystemURL,
-            requirement: .branch("main"), productFilter: .nothing,
-            traits: []
-        )
+    static let swiftSystemPackageDependency = MappablePackageDependency.init(
+        parentPackagePath: .root,
+        kind: .sourceControl(
+            name: nil,
+            location: swiftSystemURL.absoluteString,
+            requirement: .branch("main")
+        ),
+        productFilter: .nothing,
+        traits: []
+    )
 
     func testAddPackageDependencyExistingComma() throws {
         try assertManifestRefactor("""
@@ -96,12 +99,15 @@ class ManifestEditTests: XCTestCase {
             )
             """) { manifest in
                 try AddPackageDependency.addPackageDependency(
-                    PackageDependency.remoteSourceControl(
-                        identity: PackageIdentity(url: Self.swiftSystemURL),
-                        nameForTargetDependencyResolutionOnly: nil,
-                        url: Self.swiftSystemURL,
-                        requirement: .branch("main"), productFilter: .nothing,
-                        traits:[]
+                    MappablePackageDependency.init(
+                        parentPackagePath: .root,
+                        kind: .sourceControl(
+                            name: nil,
+                            location: Self.swiftSystemURL.absoluteString,
+                            requirement: .branch("main")
+                        ),
+                        productFilter: .nothing,
+                        traits: []
                     ),
                     to: manifest
                 )
@@ -128,11 +134,13 @@ class ManifestEditTests: XCTestCase {
             )
             """) { manifest in
                 try AddPackageDependency.addPackageDependency(
-                    PackageDependency.remoteSourceControl(
-                        identity: PackageIdentity(url: Self.swiftSystemURL),
-                        nameForTargetDependencyResolutionOnly: nil,
-                        url: Self.swiftSystemURL,
-                        requirement: .exact("510.0.0"),
+                    MappablePackageDependency.init(
+                        parentPackagePath: .root,
+                        kind: .sourceControl(
+                            name: nil,
+                            location: Self.swiftSystemURL.absoluteString,
+                            requirement: .exact("510.0.0")
+                        ),
                         productFilter: .nothing,
                         traits: []
                     ),
@@ -163,11 +171,13 @@ class ManifestEditTests: XCTestCase {
                 let versionRange = Range<Version>.upToNextMajor(from: Version(510, 0, 0))
 
                 return try AddPackageDependency.addPackageDependency(
-                    PackageDependency.remoteSourceControl(
-                        identity: PackageIdentity(url: Self.swiftSystemURL),
-                        nameForTargetDependencyResolutionOnly: nil,
-                        url: Self.swiftSystemURL,
-                        requirement: .range(versionRange),
+                    MappablePackageDependency.init(
+                        parentPackagePath: .root,
+                        kind: .sourceControl(
+                            name: nil,
+                            location: Self.swiftSystemURL.absoluteString,
+                            requirement: .range(versionRange)
+                        ),
                         productFilter: .nothing,
                         traits: []
                     ),
@@ -193,11 +203,13 @@ class ManifestEditTests: XCTestCase {
                 let versionRange = Range<Version>.upToNextMajor(from: Version(510, 0, 0))
 
                 return try AddPackageDependency.addPackageDependency(
-                    PackageDependency.remoteSourceControl(
-                        identity: PackageIdentity(url: Self.swiftSystemURL),
-                        nameForTargetDependencyResolutionOnly: nil,
-                        url: Self.swiftSystemURL,
-                        requirement: .range(versionRange),
+                    MappablePackageDependency.init(
+                        parentPackagePath: .root,
+                        kind: .sourceControl(
+                            name: nil,
+                            location: Self.swiftSystemURL.absoluteString,
+                            requirement: .range(versionRange)
+                        ),
                         productFilter: .nothing,
                         traits: []
                     ),
@@ -223,11 +235,13 @@ class ManifestEditTests: XCTestCase {
             )
             """) { manifest in
             try AddPackageDependency.addPackageDependency(
-                    PackageDependency.remoteSourceControl(
-                        identity: PackageIdentity(url: Self.swiftSystemURL),
-                        nameForTargetDependencyResolutionOnly: nil,
-                        url: Self.swiftSystemURL,
-                        requirement: .range(Version(508,0,0)..<Version(510,0,0)),
+                    MappablePackageDependency.init(
+                        parentPackagePath: .root,
+                        kind: .sourceControl(
+                            name: nil,
+                            location: Self.swiftSystemURL.absoluteString,
+                            requirement: .range(Version(508,0,0)..<Version(510,0,0))
+                        ),
                         productFilter: .nothing,
                         traits: []
                     ),
@@ -400,7 +414,7 @@ class ManifestEditTests: XCTestCase {
                 """
             ]) { manifest in
             try AddTarget.addTarget(
-                TargetDescription(name: "MyLib"),
+                TargetDescription(name: "MyLib"), packagePath: .root,
                 to: manifest
             )
         }
@@ -443,7 +457,7 @@ class ManifestEditTests: XCTestCase {
                                     .byName(name: "OtherLib", condition: nil),
                                     .product(name: "SwiftSyntax", package: "swift-syntax"),
                                     .target(name: "TargetLib", condition: nil)
-                                  ]),
+                                  ]), packagePath: .root,
                 to: manifest
             )
         }
@@ -501,7 +515,7 @@ class ManifestEditTests: XCTestCase {
                         .byName(name: "MyLib", condition: nil)
                     ],
                     type: .executable
-                ),
+                ), packagePath: .root,
                 to: manifest
             )
         }
@@ -564,7 +578,7 @@ class ManifestEditTests: XCTestCase {
                 ]
         ) { manifest in
             try AddTarget.addTarget(
-                TargetDescription(name: "MyMacro", type: .macro),
+                TargetDescription(name: "MyMacro", type: .macro), packagePath: .root,
                 to: manifest
             )
         }
@@ -609,7 +623,7 @@ class ManifestEditTests: XCTestCase {
                 TargetDescription(
                     name: "MyTest",
                     type: .test
-                ),
+                ), packagePath: .root,
                 to: manifest,
                 configuration: .init(
                     testHarness: .swiftTesting

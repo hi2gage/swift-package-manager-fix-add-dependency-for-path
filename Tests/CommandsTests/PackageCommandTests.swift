@@ -894,7 +894,18 @@ final class PackageCommandTests: CommandsTestCase {
             _ = try await execute(
                 [
                     "add-dependency",
-                    "/directory",
+                    "/absolute",
+                    "--type",
+                    "path"
+
+                ],
+                packagePath: path
+            )
+
+            _ = try await execute(
+                [
+                    "add-dependency",
+                    "../relative",
                     "--type",
                     "path"
 
@@ -906,7 +917,8 @@ final class PackageCommandTests: CommandsTestCase {
             XCTAssertFileExists(manifest)
             let contents: String = try fs.readFileContents(manifest)
 
-            XCTAssertMatch(contents, .contains(#".package(path: "/directory"),"#))
+            XCTAssertMatch(contents, .contains(#".package(path: "/absolute"),"#))
+            XCTAssertMatch(contents, .contains(#".package(path: "../relative"),"#))
         }
     }
 

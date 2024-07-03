@@ -114,6 +114,7 @@ extension SwiftPackageCommand {
 
             let editResult = try PackageModelSyntax.AddTarget.addTarget(
                 target,
+                packagePath: packagePath,
                 to: manifestSyntax,
                 configuration: .init(testHarness: testingLibrary),
                 installedSwiftPMConfiguration: swiftCommandState

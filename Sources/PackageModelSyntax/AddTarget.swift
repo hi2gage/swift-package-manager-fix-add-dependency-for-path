@@ -62,6 +62,7 @@ public struct AddTarget {
     /// new target.
     public static func addTarget(
         _ target: TargetDescription,
+        packagePath: AbsolutePath,
         to manifest: SourceFileSyntax,
         configuration: Configuration = .init(),
         installedSwiftPMConfiguration: InstalledSwiftPMConfiguration = .default
@@ -140,7 +141,8 @@ public struct AddTarget {
                 newPackageCall = try AddPackageDependency
                     .addPackageDependencyLocal(
                         .swiftSyntax(
-                          configuration: installedSwiftPMConfiguration
+                            packagePath: packagePath,
+                            configuration: installedSwiftPMConfiguration
                         ),
                         to: newPackageCall
                     )
@@ -168,6 +170,7 @@ public struct AddTarget {
                 newPackageCall = try AddPackageDependency
                     .addPackageDependencyLocal(
                         .swiftTesting(
+                            packagePath: packagePath,
                           configuration: installedSwiftPMConfiguration
                         ),
                         to: newPackageCall
@@ -357,7 +360,7 @@ fileprivate let macroTargetDependencies: [TargetDescription.Dependency] = [
 ]
 
 /// The package dependency for swift-syntax, for use in macros.
-fileprivate extension PackageDependency {
+fileprivate extension MappablePackageDependency {
     /// Source control URL for the swift-syntax package.
     static var swiftSyntaxURL: SourceControlURL {
         "https://github.com/swiftlang/swift-syntax.git"
@@ -365,17 +368,20 @@ fileprivate extension PackageDependency {
 
     /// Package dependency on the swift-syntax package.
     static func swiftSyntax(
-      configuration: InstalledSwiftPMConfiguration
-    ) -> PackageDependency {
+        packagePath: AbsolutePath,
+        configuration: InstalledSwiftPMConfiguration
+    ) -> MappablePackageDependency {
         let swiftSyntaxVersionDefault = configuration
             .swiftSyntaxVersionForMacroTemplate
         let swiftSyntaxVersion = Version(swiftSyntaxVersionDefault.description)!
 
-        return .sourceControl(
-            identity: PackageIdentity(url: swiftSyntaxURL),
-            nameForTargetDependencyResolutionOnly: nil,
-            location: .remote(swiftSyntaxURL),
-            requirement: .range(.upToNextMajor(from: swiftSyntaxVersion)),
+        return .init(
+            parentPackagePath: packagePath,
+            kind: .sourceControl(
+                name: nil,
+                location: swiftSyntaxURL.absoluteString,
+                requirement: .range(.upToNextMajor(from: swiftSyntaxVersion))
+            ),
             productFilter: .everything,
             traits: []
         )
@@ -390,7 +396,7 @@ fileprivate let swiftTestingTestTargetDependencies: [TargetDescription.Dependenc
 
 
 /// The package dependency for swift-testing, for use in test files.
-fileprivate extension PackageDependency {
+fileprivate extension MappablePackageDependency {
     /// Source control URL for the swift-syntax package.
     static var swiftTestingURL: SourceControlURL {
         "https://github.com/apple/swift-testing.git"
@@ -398,17 +404,20 @@ fileprivate extension PackageDependency {
 
     /// Package dependency on the swift-testing package.
     static func swiftTesting(
+        packagePath: AbsolutePath,
       configuration: InstalledSwiftPMConfiguration
-    ) -> PackageDependency {
+    ) -> MappablePackageDependency {
         let swiftTestingVersionDefault =
             configuration.swiftTestingVersionForTestTemplate
         let swiftTestingVersion = Version(swiftTestingVersionDefault.description)!
 
-        return .sourceControl(
-            identity: PackageIdentity(url: swiftTestingURL),
-            nameForTargetDependencyResolutionOnly: nil,
-            location: .remote(swiftTestingURL),
-            requirement: .range(.upToNextMajor(from: swiftTestingVersion)),
+        return .init(
+            parentPackagePath: packagePath,
+            kind: .sourceControl(
+                name: nil,
+                location: swiftTestingURL.absoluteString,
+                requirement: .range(.upToNextMajor(from: swiftTestingVersion))
+            ),
             productFilter: .everything,
             traits: []
         )

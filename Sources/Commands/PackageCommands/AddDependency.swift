@@ -93,8 +93,6 @@ extension SwiftPackageCommand {
             workspace: Workspace,
             url: String
         ) throws {
-            let identity = PackageIdentity(url: .init(url))
-
             // Collect all of the possible version requirements.
             var requirements: [PackageDependency.SourceControl.Requirement] = []
             if let exact {
@@ -144,17 +142,18 @@ extension SwiftPackageCommand {
                 }
             }
 
-            let packageDependency: PackageDependency = .sourceControl(
-                identity: identity,
-                nameForTargetDependencyResolutionOnly: nil,
-                location: .remote(.init(url)),
-                requirement: requirement,
+            let packageDependency: MappablePackageDependency = .init(
+                parentPackagePath: packagePath,
+                kind: .sourceControl(
+                    name: nil,
+                    location: url,
+                    requirement: requirement
+                ),
                 productFilter: .everything,
                 traits: []
             )
 
             try applyEdits(
-                packagePath: packagePath,
                 workspace: workspace,
                 packageDependency: packageDependency
             )
@@ -165,8 +164,6 @@ extension SwiftPackageCommand {
             workspace: Workspace,
             id: String
         ) throws {
-            let identity: PackageIdentity = .plain(id)
-
             // Collect all of the possible version requirements.
             var requirements: [PackageDependency.Registry.Requirement] = []
             if let exact {
@@ -208,16 +205,17 @@ extension SwiftPackageCommand {
                 }
             }
 
-            let packageDependency: PackageDependency = .registry(
-                identity: identity,
-                requirement: requirement,
+            let packageDependency: MappablePackageDependency = .init(
+                parentPackagePath: packagePath,
+                kind: .registry(
+                    id: id,
+                    requirement: requirement
+                ),
                 productFilter: .everything,
                 traits: []
             )
 
-
             try applyEdits(
-                packagePath: packagePath,
                 workspace: workspace,
                 packageDependency: packageDependency
             )
@@ -228,33 +226,29 @@ extension SwiftPackageCommand {
             workspace: Workspace,
             directory: String
         ) throws {
-            guard let path = try? Basics.AbsolutePath(validating: directory) else {
-                throw StringError("Package path not found")
-            }
-            let identity = PackageIdentity(path: path)
-            let packageDependency: PackageDependency = .fileSystem(
-                identity: identity,
-                nameForTargetDependencyResolutionOnly: nil,
-                path: path,
+            let packageDependency: MappablePackageDependency = .init(
+                parentPackagePath: packagePath,
+                kind: .fileSystem(
+                    name: nil,
+                    path: directory
+                ),
                 productFilter: .everything,
                 traits: []
             )
 
             try applyEdits(
-                packagePath: packagePath,
                 workspace: workspace,
                 packageDependency: packageDependency
             )
         }
 
         private func applyEdits(
-            packagePath: Basics.AbsolutePath,
             workspace: Workspace,
-            packageDependency: PackageDependency
+            packageDependency: MappablePackageDependency
         ) throws {
             // Load the manifest file
             let fileSystem = workspace.fileSystem
-            let manifestPath = packagePath.appending(component: Manifest.filename)
+            let manifestPath = packageDependency.parentPackagePath.appending(component: Manifest.filename)
             let manifestContents: ByteString
             do {
                 manifestContents = try fileSystem.readFileContents(manifestPath)
