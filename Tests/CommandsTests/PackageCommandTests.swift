@@ -834,6 +834,46 @@ final class PackageCommandTests: CommandsTestCase {
         }
     }
 
+    func testPackageAddDependency_sshURL() async throws {
+        try await testWithTemporaryDirectory { tmpPath in
+            let fs = localFileSystem
+            let path = tmpPath.appending("PackageB")
+            try fs.createDirectory(path)
+
+            try fs.writeFileContents(
+                path.appending("Package.swift"),
+                string:
+                """
+                // swift-tools-version: 5.9
+                import PackageDescription
+                let package = Package(
+                    name: "client",
+                    targets: [ .target(name: "client", dependencies: [ "library" ]) ]
+                )
+                """
+            )
+
+            _ = try await self.execute(
+                [
+                    "add-dependency",
+                    "git@github.com/swiftlang/swift-syntax.git",
+                    "--branch",
+                    "main",
+                ],
+                packagePath: path
+            )
+
+            let manifest = path.appending("Package.swift")
+            XCTAssertFileExists(manifest)
+            let contents: String = try fs.readFileContents(manifest)
+
+            XCTAssertMatch(
+                contents,
+                .contains(#".package(url: "git@github.com/swiftlang/swift-syntax.git", branch: "main"),"#)
+            )
+        }
+    }
+
     func testPackageAddDependency_absolutePath() async throws {
         try await testWithTemporaryDirectory { tmpPath in
             let fs = localFileSystem

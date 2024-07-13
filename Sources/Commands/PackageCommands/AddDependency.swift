@@ -57,17 +57,19 @@ extension SwiftPackageCommand {
                 throw StringError("unknown package")
             }
 
-            if let url = SourceControlURL(absoluteString: dependency) {
-                try self.createSourceControlPackage(
-                    packagePath: packagePath,
-                    workspace: workspace,
-                    url: url
-                )
-            } else if let path = try? Basics.AbsolutePath(validating: dependency) {
+            let pathUrl = CanonicalPackageURL(dependency)
+
+            if pathUrl.scheme == nil || pathUrl.scheme == "file" {
                 try self.createFileSystemPackage(
                     packagePath: packagePath,
                     workspace: workspace,
-                    path: path
+                    path: AbsolutePath(validating: pathUrl.description)
+                )
+            } else if pathUrl.scheme == "ssh" || pathUrl.scheme == "https" {
+                try self.createSourceControlPackage(
+                    packagePath: packagePath,
+                    workspace: workspace,
+                    url: SourceControlURL(stringLiteral: dependency)
                 )
             } else if let _ = try? Basics.RelativePath(validating: dependency) {
                 throw StringError("relative paths not supported")
